@@ -1,0 +1,45 @@
+version: "3"
+
+services:
+  # Postgtes設定
+  db:
+    # ./docker/db配下のDockerfileを元にビルド
+    build: ./docker/db
+    # コンテナ名を指定
+    container_name: db-container
+    # コンテナが落ちたら再起動
+    restart: always
+    # ポート
+    ports: 
+      - "5432:5432"
+    # DBの環境設定
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=testdb
+      - DATABASE_HOST=localhost
+    # /docker/db/init配下のファイルをマウント    
+    volumes:
+      - ./docker/db/init:/docker-entrypoint-initdb.d
+    # networks？
+    networks:
+      - local-net
+  # FastAPI    
+  api:
+    # db起動後に立ち上げる
+    links:
+      - db
+    container_name: "api"
+    # path配下のDockerfile読み込み
+    build: ./docker/api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/usr/src/server
+    networks:
+      - local-net
+
+# コンテナ間で通信を行うためのネットワークブリッジ
+networks:
+  local-net:
+    driver: bridge
